@@ -92,9 +92,6 @@
                             <option value="A">Sección A</option>
                             <option value="B">Sección B</option>
                             <option value="C">Sección C</option>
-                            <option value="D">Sección D</option>
-                            <option value="E">Sección E</option>
-                            <option value="F">Sección F</option>
                         </select>
                     </div>
                     <div>
@@ -173,7 +170,7 @@
     <!-- LOGIC SCRIPT -->
     <script>
         // CONFIGURACIÓN Y DATOS
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzInENCdO0obu9H46BXLnw6aYr-l6P1851bg8ME09fEG9qGWtieEcH6gPk5_KegLzc1tA/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCsDwRyKjc-Fg4TNYAe0dvYYNYqZFyGLV6BpUOiMZcQgt08_jdv6WhxZX6PbMyYMeXHw/exec';
         
         // Banco de Preguntas basado estrictamente en el PDF
         // Todas tienen points: 1 para sumar un total de 20 puntos.
@@ -259,24 +256,45 @@
             loadingMsg.classList.remove('hidden');
 
             try {
-                // Consulta GET al Apps Script enviando grado y sección como parámetros
-                const urlWithParams = `${APPS_SCRIPT_URL}?action=getEstudiantes&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`;
-                const response = await fetch(urlWithParams);
+                // Se envían múltiples variantes de parámetros para asegurar compatibilidad con tu codigo.gs
+                const seccionCompleta = `${grado} ${seccion}`;
+                const urlWithParams = `${APPS_SCRIPT_URL}?action=getEstudiantes&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}&aula=${encodeURIComponent(seccionCompleta)}`;
+                
+                const response = await fetch(urlWithParams, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                
+                if (!response.ok) throw new Error('Error en la respuesta del servidor');
+                
                 const data = await response.json();
 
-                // Soporta tanto un array directo ["Apellido, Nombre", ...] como un objeto { estudiantes: [...] }
-                const lista = Array.isArray(data) ? data : (data.estudiantes || data.data || []);
+                // Soporta múltiples estructuras de respuesta desde Google Apps Script
+                let lista = [];
+                if (Array.isArray(data)) {
+                    lista = data;
+                } else if (data.estudiantes) {
+                    lista = data.estudiantes;
+                } else if (data.data) {
+                    lista = data.data;
+                } else if (data[seccionCompleta]) {
+                    lista = data[seccionCompleta];
+                } else if (data[seccion]) {
+                    lista = data[seccion];
+                }
 
                 nameSelect.innerHTML = '<option value="">-- Selecciona tu nombre de la lista --</option>';
 
                 if (lista.length > 0) {
                     lista.forEach(est => {
-                        // Permite que cada elemento sea un string o un objeto { nombre: "..." }
-                        const nombreCompleto = typeof est === 'string' ? est : (est.nombre || est.apellidosNombres || est.estudiante);
-                        if (nombreCompleto) {
+                        // Permite que cada elemento sea un string o un objeto con propiedades comunes
+                        const nombreCompleto = typeof est === 'string' 
+                            ? est 
+                            : (est.nombre || est.apellidosNombres || est.estudiante || est.Nombre || Object.values(est)[0]);
+                        if (nombreCompleto && String(nombreCompleto).trim() !== '') {
                             const opt = document.createElement('option');
-                            opt.value = nombreCompleto;
-                            opt.textContent = nombreCompleto;
+                            opt.value = String(nombreCompleto).trim();
+                            opt.textContent = String(nombreCompleto).trim();
                             nameSelect.appendChild(opt);
                         }
                     });
@@ -288,7 +306,7 @@
                 }
             } catch (error) {
                 console.error('Error al cargar estudiantes:', error);
-                nameSelect.innerHTML = '<option value="">Error de conexión. Intenta nuevamente.</option>';
+                nameSelect.innerHTML = '<option value="">Error al enlazar con la hoja. Verifica la implementación.</option>';
             } finally {
                 loadingMsg.classList.add('hidden');
             }
