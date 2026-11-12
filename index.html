@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación Interactiva - La Célula</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js para el Audio Inteligente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        instGreen: {
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        instOrange: {
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                        },
+                        instYellow: {
+                            400: '#facc15',
+                            500: '#eab308',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .hidden-screen { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Drag and drop styles */
+        .draggable-item {
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+        .drag-over {
+            border: 2px dashed #f97316;
+            background-color: #fff7ed;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 via-yellow-50 to-orange-50 min-h-screen text-gray-800">
+
+    <!-- PANTALLA DE INICIO -->
+    <div id="start-screen" class="min-h-screen flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border-t-8 border-instGreen-500">
+            <div class="p-8 text-center space-y-6">
+                <div class="inline-block p-4 bg-instYellow-100 text-instOrange-500 rounded-full mb-2">
+                    <i class="fas fa-microscope text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-instGreen-700">¡Bienvenidas!</h1>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-700">Evaluación: La Célula</h2>
+                    <p class="text-gray-500 mt-1">Área Curricular: Ciencia y Tecnología</p>
+                    <p class="text-sm text-instOrange-600 font-medium mt-2">I.E. Santísima Niña María</p>
+                </div>
+                
+                <form id="student-form" class="space-y-4 text-left mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellidos y Nombres</label>
+                        <input type="text" id="student-name" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-instGreen-500 focus:border-instGreen-500 outline-none transition" placeholder="Ingresa tus datos completos">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Grado y Sección</label>
+                        <select id="student-section" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-instGreen-500 focus:border-instGreen-500 outline-none transition">
+                            <option value="">Selecciona tu sección...</option>
+                            <option value="2A">2do A</option>
+                            <option value="2B">2do B</option>
+                            <option value="2C">2do C</option>
+                            <option value="2D">2do D</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-instOrange-500 hover:bg-instOrange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform hover:-translate-y-1 mt-4">
+                        Comenzar Evaluación <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </form>
+                
+                <div class="text-xs text-gray-400 mt-6 border-t pt-4">
+                    Elaborado por: Idalia Tellería Vargas
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE EVALUACIÓN -->
+    <div id="quiz-screen" class="hidden-screen max-w-4xl mx-auto p-4 py-8 fade-in">
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md mb-6 sticky top-4 z-50 border-l-4 border-instGreen-500">
+            <div>
+                <h2 class="font-bold text-instGreen-700">I.E. Santísima Niña María</h2>
+                <p class="text-sm text-gray-500" id="display-student-info">Estudiante - Sección</p>
+            </div>
+            <div class="text-instOrange-600 font-bold bg-orange-100 px-4 py-2 rounded-lg">
+                Ciencia y Tecnología
+            </div>
+        </div>
+
+        <form id="quiz-form" class="space-y-6">
+            <div id="questions-container" class="space-y-6">
+                <!-- Las preguntas se inyectarán aquí -->
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                <p class="text-gray-600 mb-4">Revisa bien tus respuestas antes de enviar.</p>
+                <button type="submit" id="submit-btn" class="bg-instGreen-500 hover:bg-instGreen-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg">
+                    Terminar y Enviar <i class="fas fa-check-circle ml-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- PANTALLA DE RESULTADOS -->
+    <div id="result-screen" class="hidden-screen min-h-screen flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden text-center">
+            <div class="bg-gradient-to-r from-instGreen-500 to-instYellow-400 p-8 text-white">
+                <i id="result-icon" class="fas fa-trophy text-6xl mb-4 drop-shadow-md"></i>
+                <h2 class="text-3xl font-bold">¡Evaluación Completada!</h2>
+            </div>
+            <div class="p-8 space-y-6">
+                <div>
+                    <p class="text-gray-500 font-medium">Tu calificación es:</p>
+                    <div class="text-5xl font-black text-instOrange-500 my-2" id="score-display">0/20</div>
+                    <div class="inline-block px-4 py-1 rounded-full text-xl font-bold border-2" id="literal-display">
+                        -
+                    </div>
+                </div>
+                
+                <p id="feedback-message" class="text-gray-600 italic">Calculando resultados...</p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-500 text-left">
+                    <p><i class="fas fa-check text-instGreen-500 mr-2"></i>Tus respuestas han sido registradas.</p>
+                    <p class="mt-1"><i class="fas fa-info-circle text-instYellow-500 mr-2"></i>Puedes cerrar esta ventana.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // CONFIGURACIÓN Y DATOS
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzInENCdO0obu9H46BXLnw6aYr-l6P1851bg8ME09fEG9qGWtieEcH6gPk5_KegLzc1tA/exec';
+        
+        // Banco de Preguntas basado estrictamente en el PDF
+        // Todas tienen points: 1 para sumar un total de 20 puntos.
+        const originalQuestions = [
+            // A. Selección Múltiple (1-5)
+            { id: 1, type: 'mc', points: 1, q: "¿Qué es la célula?", options: ["Un órgano que permite el movimiento.", "La unidad básica estructural y funcional de los seres vivos.", "Una sustancia que produce energía.", "Un tejido formado por órganos."], answer: 1 },
+            { id: 2, type: 'mc', points: 1, q: "¿Qué estructuras se encuentran tanto en la célula animal como en la vegetal?", options: ["Pared celular, cloroplastos y vacuola central.", "Núcleo, membrana celular, citoplasma y mitocondrias.", "Cloroplastos, ribosomas y pared celular.", "Pared celular, núcleo y cloroplastos."], answer: 1 },
+            { id: 3, type: 'mc', points: 1, q: "¿Qué estructura permite a las células vegetales realizar la fotosíntesis?", options: ["Mitocondria.", "Lisosoma.", "Cloroplasto.", "Núcleo."], answer: 2 },
+            { id: 4, type: 'mc', points: 1, q: "¿Cuál es la principal función de la membrana celular?", options: ["Producir proteínas.", "Controlar la entrada y salida de sustancias.", "Almacenar el material genético.", "Fabricar energía mediante la fotosíntesis."], answer: 1 },
+            { id: 5, type: 'mc', points: 1, q: "¿Qué función cumplen las mitocondrias?", options: ["Producen energía mediante la respiración celular.", "Protegen externamente a la célula.", "Almacenan el ADN en el núcleo.", "Realizan la fotosíntesis."], answer: 0 },
+            
+            // B. Completar espacios (6-9)
+            { id: 6, type: 'fill', points: 1, q: "El ________ es el medio donde se encuentran los organelos celulares.", accepted: ["citoplasma", "cito plasma"] },
+            { id: 7, type: 'fill', points: 1, q: "La ________ celular proporciona rigidez, soporte y protección a la célula vegetal.", accepted: ["pared", "pared celular"] },
+            { id: 8, type: 'fill', points: 1, q: "La ________ es el pigmento verde que permite captar la luz para realizar la fotosíntesis.", accepted: ["clorofila"] },
+            { id: 9, type: 'fill', points: 1, q: "La ________ de la célula vegetal almacena agua, nutrientes y otras sustancias.", accepted: ["vacuola", "gran vacuola", "vacuola central"] },
+            
+            // C. Relacionar (10-12)
+            { id: 10, type: 'match', points: 1, q: "Relaciona cada organelo con la función que le corresponde:", pairs: [
+                { left: "1. Núcleo", right: "Almacena la información genética." },
+                { left: "2. Ribosomas", right: "Fabrican proteínas." },
+                { left: "3. Cloroplastos", right: "Realiza la fotosíntesis." },
+                { left: "4. Aparato de Golgi", right: "Modifica y empaqueta sustancias." },
+                { left: "5. Pared celular", right: "Proporciona soporte y protección." }
+            ]},
+            { id: 11, type: 'match', points: 1, q: "Relaciona cada característica con el tipo de célula correspondiente:", pairs: [
+                { left: "Tiene pared celular y cloroplastos.", right: "Célula vegetal" },
+                { left: "No presenta pared celular ni cloroplastos.", right: "Célula animal" },
+                { left: "Posee núcleo, membrana celular y citoplasma.", right: "Ambas células" }
+            ]},
+            { id: 12, type: 'match', points: 1, q: "Según la Célula Animal, relaciona cada número con el nombre de su estructura:", pairs: [
+                { left: "Número 1", right: "Nucléolo" },
+                { left: "Número 2", right: "Núcleo celular" },
+                { left: "Número 3", right: "Ribosoma" },
+                { left: "Número 9", right: "Mitocondria" }
+            ]},
+
+            // D. Preguntas con Imagen (13-17)
+            { id: 13, type: 'image_mc', points: 1, q: "Observa la imagen 1. ¿Qué estructura celular está representada por el número 6 y cuál es su función?", imageUrl: "https://www.equiposylaboratorio.com/userfiles/800px-Biological_cell_svg.JPG", options: ["Aparato de Golgi: modifica, empaqueta y distribuye sustancias.", "Mitocondria: produce energía.", "Ribosoma: fabrica proteínas.", "Lisosoma: digiere sustancias."], answer: 0 },
+            { id: 14, type: 'image_mc', points: 1, q: "En la imagen 1, ¿qué estructura corresponde al número 5?", imageUrl: "https://www.equiposylaboratorio.com/userfiles/800px-Biological_cell_svg.JPG", options: ["Retículo endoplasmático rugoso.", "Núcleo celular.", "Vacuola.", "Citoesqueleto."], answer: 0 },
+            { id: 15, type: 'image_mc', points: 1, q: "Observa la imagen 2 (célula vegetal). ¿Qué estructura corresponde al número 3 y cuál es su función?", imageUrl: "https://cdn0.bioenciclopedia.com/es/posts/0/1/3/partes_de_la_celula_vegetal_y_sus_funciones_310_1_orig.jpg", options: ["Membrana celular: controla la entrada y salida de sustancias.", "Pared celular: proporciona soporte y protección.", "Mitocondria: produce energia.", "Núcleo: contiene el material genético."], answer: 1 },
+            { id: 16, type: 'image_mc', points: 1, q: "En la imagen 2, ¿qué estructura corresponde al número 5?", imageUrl: "https://cdn0.bioenciclopedia.com/es/posts/0/1/3/partes_de_la_celula_vegetal_y_sus_funciones_310_1_orig.jpg", options: ["Ribosoma.", "Citoplasma.", "Vacuola.", "Peroxisoma."], answer: 2 },
+            { id: 17, type: 'image_mc', points: 1, q: "En la imagen 2, ¿qué estructura corresponde al número 1?", imageUrl: "https://cdn0.bioenciclopedia.com/es/posts/0/1/3/partes_de_la_celula_vegetal_y_sus_funciones_310_1_orig.jpg", options: ["Membrana celular.", "Núcleo.", "Cloroplasto.", "Pared celular."], answer: 0 },
+
+            // E. Ordenar Secuencias (18-19)
+            { id: 18, type: 'order', points: 1, q: "Ordena los niveles de organización biológica desde el más pequeño hasta el más complejo (arrastra los elementos):", correctOrder: ["Célula", "Tejido", "Órgano", "Sistema", "Organismo"] },
+            { id: 19, type: 'order', points: 1, q: "Ordena la secuencia del proceso de elaboración y transporte de proteínas utilizando los organelos de la célula animal:", correctOrder: ["Ribosomas", "Retículo endoplasmático rugoso", "Aparato de Golgi", "Vesículas de secreción"] },
+            
+            // F. Análisis y Comprensión (20)
+            { id: 20, type: 'mc', points: 1, q: "Una estudiante observa una célula que tiene pared celular, cloroplastos y una vacuola central de gran tamaño. ¿A qué tipo de célula corresponde y por qué?", options: ["Célula animal, porque tiene vacuolas.", "Célula vegetal, porque presenta pared celular, cloroplastos y una gran vacuola central.", "Célula animal, porque realiza fotosíntesis.", "Célula vegetal, porque no tiene núcleo."], answer: 1 }
+        ];
+
+        let currentQuizData = [];
+        let totalMaxPoints = 0;
+        let studentInfo = {};
+
+        // INICIALIZACIÓN
+        document.getElementById('student-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            studentInfo.name = document.getElementById('student-name').value;
+            studentInfo.section = document.getElementById('student-section').value;
+            document.getElementById('display-student-info').textContent = `${studentInfo.name} - Sec: ${studentInfo.section}`;
+            
+            // Iniciar Audio Context
+            Tone.start();
+            
+            startQuiz();
+        });
+
+        // FUNCIONES DE ALEATORIEDAD
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startQuiz() {
+            document.getElementById('start-screen').classList.add('hidden-screen');
+            document.getElementById('quiz-screen').classList.remove('hidden-screen');
+            
+            // Aleatorizar preguntas
+            currentQuizData = shuffleArray(originalQuestions);
+            totalMaxPoints = 0;
+            
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+
+            currentQuizData.forEach((q, index) => {
+                totalMaxPoints += q.points;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition';
+                card.innerHTML = `<h3 class="text-lg font-semibold text-gray-800 mb-4"><span class="text-instGreen-600 mr-2">${index + 1}.</span>${q.q}</h3>`;
+                
+                let content = '';
+                
+                if (q.type === 'mc' || q.type === 'image_mc') {
+                    if (q.imageUrl) {
+                        content += `<div class="mb-4 text-center"><img src="${q.imageUrl}" alt="Referencia visual" class="max-h-64 mx-auto rounded border shadow-sm"></div>`;
+                    }
+                    
+                    // Aleatorizar alternativas guardando la respuesta correcta
+                    let optionsWithIndices = q.options.map((opt, i) => ({ text: opt, isCorrect: i === q.answer }));
+                    let shuffledOptions = shuffleArray(optionsWithIndices);
+                    
+                    // Guardamos la nueva estructura en el objeto de la pregunta para validarlo después
+                    q.shuffledOptions = shuffledOptions;
+                    
+                    content += `<div class="space-y-2">`;
+                    shuffledOptions.forEach((opt, i) => {
+                        content += `
+                        <label class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-green-50 cursor-pointer transition">
+                            <input type="radio" name="q_${q.id}" value="${i}" required class="w-4 h-4 text-instGreen-600 focus:ring-instGreen-500">
+                            <span class="ml-3 text-gray-700">${opt.text}</span>
+                        </label>`;
+                    });
+                    content += `</div>`;
+                } 
+                else if (q.type === 'fill') {
+                    let parts = q.q.split('________');
+                    card.innerHTML = `<h3 class="text-lg font-semibold text-gray-800 mb-4"><span class="text-instGreen-600 mr-2">${index + 1}.</span>Completa el espacio en blanco:</h3>`;
+                    content += `<div class="flex items-center flex-wrap gap-2 text-gray-700 text-lg">
+                        <span>${parts[0]}</span>
+                        <input type="text" name="q_${q.id}" required class="border-b-2 border-instOrange-400 focus:border-instGreen-500 outline-none px-2 py-1 text-center w-32 font-semibold text-instGreen-700">
+                        <span>${parts[1] || ''}</span>
+                    </div>`;
+                }
+                else if (q.type === 'match') {
+                    let rightSide = shuffleArray(q.pairs.map(p => p.right));
+                    q.shuffledMatch = rightSide;
+                    
+                    content += `<div class="space-y-3">`;
+                    q.pairs.forEach((pair, i) => {
+                        content += `
+                        <div class="flex flex-col md:flex-row md:items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span class="font-medium text-gray-700 mb-2 md:mb-0 md:w-1/2">${pair.left}</span>
+                            <select name="q_${q.id}_${i}" required class="md:w-1/2 p-2 border border-gray-300 rounded focus:ring-instGreen-500 focus:border-instGreen-500 outline-none">
+                                <option value="">-- Selecciona --</option>
+                                ${rightSide.map(r => `<option value="${r}">${r}</option>`).join('')}
+                            </select>
+                        </div>`;
+                    });
+                    content += `</div>`;
+                }
+                else if (q.type === 'order') {
+                    let shuffledOrder = shuffleArray(q.correctOrder);
+                    content += `<ul class="order-list space-y-2" id="order_${q.id}">`;
+                    shuffledOrder.forEach((item, i) => {
+                        content += `
+                        <li draggable="true" data-value="${item}" class="draggable-item flex items-center bg-white p-3 rounded-lg border-2 border-gray-200 hover:border-instOrange-400">
+                            <i class="fas fa-grip-lines text-gray-400 mr-3 cursor-grab"></i>
+                            <span class="font-medium text-gray-700">${item}</span>
+                        </li>`;
+                    });
+                    content += `</ul>
+                    <input type="hidden" name="q_${q.id}" id="hidden_order_${q.id}" value="${shuffledOrder.join('|')}">
+                    <p class="text-xs text-gray-400 mt-2"><i class="fas fa-info-circle"></i> Arrastra los elementos para ordenarlos.</p>`;
+                }
+
+                card.innerHTML += content;
+                container.appendChild(card);
+                
+                if(q.type === 'order') setupDragAndDrop(`order_${q.id}`, `hidden_order_${q.id}`);
+            });
+        }
+
+        // LÓGICA DE ARRASTRAR Y SOLTAR (Ordenamiento)
+        function setupDragAndDrop(listId, hiddenInputId) {
+            const list = document.getElementById(listId);
+            let draggedItem = null;
+
+            list.addEventListener('dragstart', e => {
+                if(e.target.tagName === 'LI') {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.style.opacity = '0.5', 0);
+                }
+            });
+
+            list.addEventListener('dragend', e => {
+                if(e.target.tagName === 'LI') {
+                    setTimeout(() => {
+                        e.target.style.opacity = '1';
+                        draggedItem = null;
+                        updateHiddenOrderInput(list, hiddenInputId);
+                    }, 0);
+                }
+            });
+
+            list.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const currentElement = document.querySelector('.drag-over');
+                if (currentElement) currentElement.classList.remove('drag-over');
+                
+                if (e.target.tagName === 'LI' && e.target !== draggedItem) {
+                    e.target.classList.add('drag-over');
+                }
+                
+                if (afterElement == null) {
+                    list.appendChild(draggedItem);
+                } else {
+                    list.insertBefore(draggedItem, afterElement);
+                }
+            });
+
+            list.addEventListener('dragleave', e => {
+                if(e.target.tagName === 'LI') e.target.classList.remove('drag-over');
+            });
+            list.addEventListener('drop', e => {
+                if(e.target.tagName === 'LI') e.target.classList.remove('drag-over');
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.draggable-item:not([style*="opacity: 0.5"])')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function updateHiddenOrderInput(list, hiddenId) {
+            const items = [...list.querySelectorAll('li')].map(li => li.getAttribute('data-value'));
+            document.getElementById(hiddenId).value = items.join('|');
+        }
+
+        // SISTEMA DE AUDIO INTELIGENTE (Tone.js)
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        
+        function playAudio(type) {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            const now = Tone.now();
+            
+            switch(type) {
+                case 'success': // Acorde de éxito (AD/A)
+                    synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+                    break;
+                case 'average': // Acorde medio (B)
+                    synth.triggerAttackRelease(["C4", "Eb4", "G4"], "8n", now);
+                    break;
+                case 'poor': // Tono bajo (C)
+                    synth.triggerAttackRelease(["G2", "C2"], "4n", now);
+                    break;
+                case 'finish': // Arpegio de finalización
+                    synth.triggerAttackRelease("C4", "16n", now);
+                    synth.triggerAttackRelease("E4", "16n", now + 0.1);
+                    synth.triggerAttackRelease("G4", "16n", now + 0.2);
+                    synth.triggerAttackRelease("C5", "8n", now + 0.3);
+                    break;
+            }
+        }
+
+        // EVALUACIÓN Y ENVÍO
+        document.getElementById('quiz-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Deshabilitar botón
+            const btn = document.getElementById('submit-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Evaluando...';
+            btn.disabled = true;
+
+            let earnedPoints = 0;
+
+            currentQuizData.forEach(q => {
+                if (q.type === 'mc' || q.type === 'image_mc') {
+                    let selectedIdx = document.querySelector(`input[name="q_${q.id}"]:checked`).value;
+                    if (q.shuffledOptions[selectedIdx].isCorrect) earnedPoints += q.points;
+                } 
+                else if (q.type === 'fill') {
+                    let inputVal = document.querySelector(`input[name="q_${q.id}"]`).value.trim().toLowerCase();
+                    if (q.accepted.includes(inputVal)) earnedPoints += q.points;
+                }
+                else if (q.type === 'match') {
+                    let allCorrect = true;
+                    q.pairs.forEach((pair, i) => {
+                        let selectedVal = document.querySelector(`select[name="q_${q.id}_${i}"]`).value;
+                        if (selectedVal !== pair.right) allCorrect = false;
+                    });
+                    if (allCorrect) earnedPoints += q.points;
+                }
+                else if (q.type === 'order') {
+                    let currentOrder = document.getElementById(`hidden_order_${q.id}`).value;
+                    let correctOrderStr = q.correctOrder.join('|');
+                    if (currentOrder === correctOrderStr) earnedPoints += q.points;
+                }
+            });
+
+            // ESCALA DE CALIFICACIÓN VIGESIMAL Y LITERAL
+            // Regla de 3 para calcular en base 20 exacto
+            let score_20 = Math.round((earnedPoints / totalMaxPoints) * 20);
+            
+            let literal = 'C';
+            let audioType = 'poor';
+            let colorClass = 'text-red-500 border-red-500';
+            let iconClass = 'fa-times-circle';
+            let feedback = 'Necesitas repasar más el tema. ¡No te rindas!';
+
+            if (score_20 >= 18) {
+                literal = 'AD';
+                audioType = 'success';
+                colorClass = 'text-blue-500 border-blue-500';
+                iconClass = 'fa-medal';
+                feedback = '¡Logro Destacado! Excelente dominio del tema.';
+            } else if (score_20 >= 15) {
+                literal = 'A';
+                audioType = 'success';
+                colorClass = 'text-instGreen-500 border-instGreen-500';
+                iconClass = 'fa-check-circle';
+                feedback = '¡Logro Esperado! Muy buen trabajo.';
+            } else if (score_20 >= 11) {
+                literal = 'B';
+                audioType = 'average';
+                colorClass = 'text-instOrange-500 border-instOrange-500';
+                iconClass = 'fa-exclamation-circle';
+                feedback = 'En Proceso. Vas por buen camino, pero puedes mejorar.';
+            }
+
+            // Mostrar Pantalla de Resultados
+            document.getElementById('quiz-screen').classList.add('hidden-screen');
+            const resScreen = document.getElementById('result-screen');
+            resScreen.classList.remove('hidden-screen');
+            
+            document.getElementById('score-display').textContent = `${score_20}/20`;
+            const litDisplay = document.getElementById('literal-display');
+            litDisplay.textContent = literal;
+            litDisplay.className = `inline-block px-6 py-2 rounded-full text-2xl font-bold border-4 mt-2 ${colorClass}`;
+            
+            document.getElementById('result-icon').className = `fas ${iconClass} text-6xl mb-4 drop-shadow-md`;
+            document.getElementById('feedback-message').textContent = feedback;
+
+            // Reproducir Audio
+            playAudio(audioType);
+
+            // Enviar datos a Google Apps Script
+            const payload = {
+                nombre: studentInfo.name,
+                seccion: studentInfo.section,
+                puntaje: score_20,
+                literal: literal,
+                fecha: new Date().toISOString()
+            };
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                console.log('Datos enviados correctamente al Apps Script.');
+            }).catch(error => {
+                console.error('Error al enviar los datos:', error);
+            });
+        });
+    </script>
+</body>
+</html>
